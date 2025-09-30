@@ -136,29 +136,6 @@ router.get('/:folderType', auth, async (req, res) => {
   }
 });
 
-// @route   GET /api/folders/teachers
-// @desc    Get all teachers for folder access (Principal only)
-// @access  Private (Principal)
-router.get('/teachers', [auth, principalOnly], async (req, res) => {
-  try {
-    const teachers = await User.find({ 
-      role: 'teacher', 
-      isActive: true 
-    }).select('name nip email').sort({ name: 1 });
-
-    res.json({
-      success: true,
-      data: teachers
-    });
-  } catch (error) {
-    console.error('Get teachers error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
 // @route   POST /api/folders/:folderType/upload
 // @desc    Upload file to specific folder
 // @access  Private (Teacher owns folder or Principal)
