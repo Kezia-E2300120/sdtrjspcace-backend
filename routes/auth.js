@@ -38,11 +38,13 @@ router.post('/register', [
       });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create user
     user = new User({
       name,
       email,
-      password,
+      password: hashedPassword,
       nip,
       role: role || 'teacher'
     });
@@ -190,7 +192,8 @@ router.post('/forgot-password', [
     }
 
     // Update password
-    user.password = newPassword;
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
     await user.save();
 
     res.json({

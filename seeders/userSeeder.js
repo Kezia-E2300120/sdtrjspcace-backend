@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 const User = require('../models/User'); // sesuaikan path modelmu
 
@@ -12,11 +13,13 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log('MongoDB connected for seeding...'))
 .catch(err => console.error(err));
 
+const hashedPassword = await bcrypt.hash('principal123', 10);
+
 const seedUsers = [
   {
     name: 'Principal',
     email: 'principal@example.com',
-    password: 'principal123',
+    password: hashedPassword,
     role: 'principal'
   }
 ];
