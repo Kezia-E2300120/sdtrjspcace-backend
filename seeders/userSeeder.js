@@ -6,12 +6,12 @@ const User = require('../models/User'); // sesuaikan path modelmu
 dotenv.config();
 
 // koneksi MongoDB
-mongoose.connect(process.env.MONGO_URI, {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/school_management', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('MongoDB connected for seeding...'))
-.catch(err => console.error(err));
+.then(() => console.log('MongoDB Connected'))
+.catch(err => console.log('MongoDB connection error:', err));
 
 const hashedPassword = await bcrypt.hash('principal123', 10);
 
