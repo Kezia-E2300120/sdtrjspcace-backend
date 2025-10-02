@@ -15,16 +15,17 @@ const router = express.Router();
 router.get('/', auth, async (req, res) => {
   try {
     let query = {};
-    
+    let user = null;
+
     if (req.user.role === 'teacher') {
       query.teacherId = req.user.id;
     }
 
-    // Filter by teacherId if provided (for principal viewing teacher folders)
+    // Kalau principal pilih teacherId tertentu
     if (req.query.teacherId && req.user.role === 'principal') {
       query.teacherId = req.query.teacherId;
-      
-      // Track recent access for principal
+
+      // Simpan history akses principal
       const teacher = await User.findById(req.query.teacherId);
       if (teacher) {
         await User.findByIdAndUpdate(req.user.id, {
@@ -36,10 +37,12 @@ router.get('/', auth, async (req, res) => {
                 accessedAt: new Date()
               }],
               $position: 0,
-              $slice: 10 // Keep only last 10 recent folders
+              $slice: 10
             }
           }
         });
+
+        user = teacher;
       }
     }
 
@@ -47,7 +50,7 @@ router.get('/', auth, async (req, res) => {
       .populate('teacherId', 'name nip')
       .sort({ folderType: 1, createdAt: -1 });
 
-    // Group by folder type
+    // Grouping folder by type
     const groupedFolders = {
       material: null,
       administration: null,
@@ -61,6 +64,7 @@ router.get('/', auth, async (req, res) => {
 
     res.json({
       success: true,
+      user,
       data: groupedFolders
     });
   } catch (error) {
@@ -77,6 +81,7 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/:folderType', auth, async (req, res) => {
   try {
+    let user = null;
     const { folderType } = req.params;
     const validFolderTypes = ['material', 'administration', 'event', 'other'];
 
@@ -97,6 +102,26 @@ router.get('/:folderType', auth, async (req, res) => {
     // Jika principal → bisa filter pakai ?teacherId
     if (req.user.role === 'principal' && req.query.teacherId) {
       query.teacherId = req.query.teacherId;
+
+      // Simpan history akses principal
+      const teacher = await User.findById(req.query.teacherId);
+      if (teacher) {
+        await User.findByIdAndUpdate(req.user.id, {
+          $push: {
+            recentFolders: {
+              $each: [{
+                teacherId: req.query.teacherId,
+                teacherName: teacher.name,
+                accessedAt: new Date()
+              }],
+              $position: 0,
+              $slice: 10
+            }
+          }
+        });
+
+        user = teacher;
+      }
     }
 
     // Cari folder
@@ -115,6 +140,7 @@ router.get('/:folderType', auth, async (req, res) => {
     res.json({
       success: true,
       folderType,
+      user,
       files: folder.files.map(f => ({
         _id: f._id,
         fileName: f.fileName,
@@ -162,8 +188,8 @@ router.post('/:folderType/upload', auth, upload.single('file'), async (req, res)
     let teacherName = req.user.name;
 
     // Jika principal upload ke folder guru tertentu
-    if (req.user.role === 'principal' && req.body.teacherId) {
-      const teacher = await User.findById(req.body.teacherId);
+    if (req.user.role === 'principal' && req.query.teacherId) {
+      const teacher = await User.findById(req.query.teacherId);
       if (!teacher) {
         return res.status(404).json({
           success: false,
@@ -301,7 +327,8 @@ router.get('/:folderType/files/:fileId/download', auth, async (req, res) => {
         message: 'Folder not found'
       });
     }
-
+    console.log('folder', folder)
+    console.log('fileId', fileId)
     const file = folder.files.find((f) => f._id.toString() === fileId);
     if (!file) {
       return res.status(404).json({
