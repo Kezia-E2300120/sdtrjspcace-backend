@@ -9,6 +9,7 @@ dotenv.config();
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/school_management', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 30000,
 })
 .then(() => console.log('MongoDB Connected'))
 .catch(err => console.error('MongoDB connection error:', err));
@@ -23,7 +24,8 @@ const seedDB = async () => {
         name: 'Principal',
         email: 'principal@example.com',
         password: hashedPassword,
-        role: 'principal'
+        role: 'principal',
+        nip: '00000'
       }
     ];
 
